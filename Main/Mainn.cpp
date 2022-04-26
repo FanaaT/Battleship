@@ -13,6 +13,6 @@ int main()
 	draw_field(field[0], field_size);
 	fill_from_file(field[0], field_size);
 	draw_field(field[0], field_size);
-
+	player_turn(field, field_size);
 }
 
