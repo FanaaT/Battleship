@@ -4,12 +4,14 @@
 using std::cout;
 using std::cin;
 
+enum Symbols {EMPTY = ' ', SHIP = '#', MISS = '*', HURT = 'X'};
+
 const int size = 10;
 
 char p1Field[size + 2][size + 2] = {};
 char p2Field[size + 2][size + 2] = {};
 
-char* currentField = &p2Field[0][0];
+bool isTurnP1 = false;
 
 void fill_from_file(char field[][size + 2], const char* file) {
 	char buffer[1000] = {};
@@ -31,7 +33,7 @@ void fill_fields() {
 	fill_from_file(p2Field, "P2Ships.txt");
 }
 
-void draw_field(char field[][size + 2]){
+void draw_field(char field[][size + 2]) {
 	cout << ' ' << ' ';
 	for (int i = 0; i < size; i++)
 	{
@@ -52,47 +54,57 @@ void draw_field(char field[][size + 2]){
 	}
 }
 
-void shot(char field[][size + 2], int row, int col) {
-	if (field[row][col] == '#') {
+Symbols shot(char field[][size + 2], int row, int col) {
+	if (field[row][col] == SHIP) {
 		cout << "injured\n";
-		field[row][col] = 'X';
+		field[row][col] = HURT;
+		return HURT;
 	}
-
-	else {
+	else if (field[row][col] == EMPTY) {
 		cout << "past\n";
-		field[row][col] = '*';
+		field[row][col] = MISS;
+		return MISS;
 	}
-	draw_field(p2Field);
 }
 
 void player_turn(char field[][size + 2]){
 	int col, row;
 	char temp;
 
-	cout << '\t' << 2 << "p field\n";
-	draw_field(p2Field);
-	cout << '\t' << 1 << "p turn\n";
-
 	do {
-		cin.clear();
-		cout << "Shot coordinates: ";
-		cin >> temp >> row;
-		col = int(temp) - 96;
-	} while (col > size || col < 1 || row > size || row < 1 ||
-		field[row][col] == 'X' || field[row][col] == '*');
+		cout << '\t' << (isTurnP1 ? 2 : 1) << "p field\n";
+		draw_field(field);
+		cout << '\t' << (isTurnP1 ? 1 : 2) << "p turn\n";
+
+		do {
+			cin.clear();
+			cout << "Shot coordinates: ";
+			cin >> temp >> row;
+			col = int(temp) - 96;
+		} while (col > size || col < 1 || row > size || row < 1 ||
+			field[row][col] == HURT || field[row][col] == MISS);
+
+	} while (shot(field, row, col) == HURT);
 	
-	shot(field, row, col);
 	cout << '\n' << '\n';
 }
 
-bool game_over() {
-	return false;
+bool game_over(char field[][size + 2]) {
+	for (int i = 1; i < size + 1; i++) {
+		for (int j = 1; j < size + 1; j++) {
+			if (field[i][j] == SHIP)
+				return false;
+		}
+	}
+	return true;
 }
 
 void run() {
 	fill_fields();
-	while (!game_over()) {
-		player_turn(p2Field);
-	}
+	do {
+		isTurnP1 = !isTurnP1;
+		player_turn(isTurnP1 ? p2Field : p1Field);
+	} while (!game_over(isTurnP1 ? p2Field : p1Field));
+	cout << (isTurnP1 ? 1 : 2) << " PLAYER WINNER!!!!!!!!!!!!!!!!!!!!!";
 }
 
