@@ -4,7 +4,7 @@
 using std::cout;
 using std::cin;
 
-enum Symbols {EMPTY = ' ', SHIP = '#', MISS = '*', HURT = 'X'};
+enum Symbols {EMPTY = ' ', SHIP = '#', MISS = '*', HURT = '/', DESTROYED = 'X' };
 
 const int size = 10;
 
@@ -28,36 +28,82 @@ void fill_from_file(char field[][size + 2], const char* file) {
 }
 
 void fill_fields() {
-
 	fill_from_file(p1Field, "P1Ships.txt");
 	fill_from_file(p2Field, "P2Ships.txt");
 }
 
 void draw_field(char field[][size + 2]) {
 	cout << ' ' << ' ';
-	for (int i = 0; i < size; i++)
-	{
+	for (int i = 0; i < size; i++){
 		cout << ' ' << char(97 + i);
 	}
 
 	cout << '\n';
 
-	for (int i = 1; i < size + 1; i++)
-	{
+	for (int i = 1; i < size + 1; i++){
 		cout << std::setw(2) << i << '|';
-		for (int j = 1; j < size + 1; j++)
-		{
-			cout << field[i][j] << '|';
-			
+		for (int j = 1; j < size + 1; j++){
+			if (field[i][j] == SHIP) {
+				cout << ' ' << '|';
+			}
+			else {
+				cout << field[i][j] << '|';
+			}
 		}
 		cout << '\n';
 	}
 }
 
+bool ships_is_destroyed(char field[][size + 2], int row, int col) {
+	char* currentCell;
+	bool shipsIsDestroyed = true;
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			currentCell = &field[(row - 1) + i][(col - 1) + j];
+			if (*currentCell == SHIP) {
+				return false;
+			}
+			else if (*currentCell == HURT) {
+				*currentCell = 'P';
+				shipsIsDestroyed = ships_is_destroyed(field, ((row - 1) + i), ((col - 1) + j));
+				if (shipsIsDestroyed == false) {
+					*currentCell = HURT;
+					return false;
+				}
+				*currentCell = HURT;
+			}
+		}
+	}
+	return shipsIsDestroyed;
+}
+
+void destroy(char field[][size + 2], int row, int col) {
+	char* currentCell;
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			currentCell = &field[(row - 1) + i][(col - 1) + j];
+			if (*currentCell == HURT) {
+				*currentCell = DESTROYED;
+				destroy(field, ((row - 1) + i), ((col - 1) + j));
+			}
+			else if (*currentCell == EMPTY) {
+				*currentCell = MISS;
+			}
+		}
+	}
+}
+
 Symbols shot(char field[][size + 2], int row, int col) {
 	if (field[row][col] == SHIP) {
-		cout << "injured\n";
+		field[row][col] = 'P';
+		if (ships_is_destroyed(field, row, col)) {
+			field[row][col] = DESTROYED;
+			destroy(field, row, col);
+			cout << "destroyed\n";
+			return HURT;
+		}
 		field[row][col] = HURT;
+		cout << "injured\n";
 		return HURT;
 	}
 	else if (field[row][col] == EMPTY) {
@@ -82,7 +128,7 @@ void player_turn(char field[][size + 2]){
 			cin >> temp >> row;
 			col = int(temp) - 96;
 		} while (col > size || col < 1 || row > size || row < 1 ||
-			field[row][col] == HURT || field[row][col] == MISS);
+			field[row][col] != EMPTY && field[row][col] != SHIP);
 
 	} while (shot(field, row, col) == HURT);
 	
